@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Assistant CR — Jasseron</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bleu:#1B3A6B; --or:#C5A028; --vert:#1a7a4a; --rouge:#b32020; --orange:#c45c00;
+  --bg:#FAFBFC; --gris:#F0F2F5; --bord:#D0D8E8;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Source Sans 3',sans-serif;font-weight:300;background:var(--bg);color:#1a1a2e;min-height:100vh}
+
+header{background:var(--bleu)}
+header::after{content:'';display:block;height:4px;background:linear-gradient(90deg,var(--or),#f0d98a,var(--or))}
+.h-inner{display:flex;align-items:center;gap:16px;padding:18px 32px;flex-wrap:wrap}
+.blason{width:44px;height:44px;background:var(--or);border-radius:50% 50% 44% 44%;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.h-text h1{font-family:'Playfair Display',serif;font-size:1.2rem;color:#fff}
+.h-text p{font-size:.75rem;color:#f0d98a;letter-spacing:.07em;text-transform:uppercase;margin-top:2px}
+
+main{max-width:900px;margin:0 auto;padding:28px 20px 60px}
+
+/* Métadonnées */
+.meta{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:24px}
+@media(max-width:580px){.meta{grid-template-columns:1fr}}
+label{display:block;font-size:.72rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--bleu);margin-bottom:4px}
+input[type=text],input[type=date],select,textarea{
+  width:100%;background:#fff;border:1.5px solid var(--bord);border-radius:6px;
+  padding:8px 11px;font-family:'Source Sans 3',sans-serif;font-size:.86rem;color:#1a1a2e;
+  outline:none;transition:border-color .2s,box-shadow .2s
+}
+input:focus,select:focus,textarea:focus{border-color:var(--bleu);box-shadow:0 0 0 3px rgba(27,58,107,.08)}
+
+/* Titre section */
+.stitle{font-family:'Playfair Display',serif;font-size:.95rem;color:var(--bleu);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.stitle::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--or),transparent)}
+
+/* Zone saisie */
+.saisie-box{background:var(--gris);border:1.5px dashed var(--bord);border-radius:10px;padding:18px;margin-bottom:20px}
+.tabs{display:flex;gap:6px;margin-bottom:14px}
+.tab{flex:1;padding:7px;border:1.5px solid var(--bord);border-radius:6px;background:#fff;
+  color:var(--bleu);font-family:'Source Sans 3',sans-serif;font-size:.8rem;font-weight:600;
+  cursor:pointer;text-align:center;transition:all .2s}
+.tab.on{background:var(--bleu);color:#fff;border-color:var(--bleu)}
+.panel{display:none}.panel.on{display:block}
+
+textarea#cr{min-height:160px;resize:vertical;line-height:1.6}
+
+/* Micro */
+
+/* Fichier */
+
+/* Aperçu transcription */
+.preview{background:#fff;border:1.5px solid var(--bord);border-radius:6px;padding:10px 12px;
+  font-size:.8rem;color:#444;line-height:1.6;max-height:110px;overflow-y:auto;margin-top:10px;display:none}
+.preview.on{display:block}
+
+/* Bouton analyser */
+.btn-go{display:block;width:100%;background:var(--bleu);color:#fff;border:none;border-radius:8px;
+  padding:14px;font-family:'Playfair Display',serif;font-size:1rem;font-weight:600;cursor:pointer;
+  position:relative;overflow:hidden;transition:background .2s}
+.btn-go::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--or),#f0d98a,var(--or))}
+.btn-go:hover{background:#254d8f}
+.btn-go:disabled{background:#8898b0;cursor:not-allowed}
+
+/* Résultats */
+#res{margin-top:28px}
+.loader-w{display:flex;flex-direction:column;align-items:center;gap:12px;padding:40px 0}
+.spin{width:38px;height:38px;border:3px solid var(--bord);border-top-color:var(--bleu);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin-msg{font-size:.84rem;color:#666;font-style:italic}
+
+.err-box{background:#fde8e8;border:1.5px solid var(--rouge);border-radius:8px;padding:14px 18px;color:var(--rouge);font-size:.86rem}
+.warn-box{background:#fff8e8;border:1.5px solid var(--or);border-radius:8px;padding:14px 18px;color:#7a5c00;font-size:.86rem;margin-bottom:14px}
+.info-box{background:#eef5ff;border:1.5px solid #a0b4d0;border-radius:8px;padding:14px 18px;font-size:.86rem;color:#1B3A6B;margin-bottom:14px}
+
+.res-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px}
+.res-head h2{font-family:'Playfair Display',serif;font-size:1.05rem;color:var(--bleu)}
+.btn-copy{background:var(--or);color:#fff;border:none;border-radius:6px;padding:7px 16px;
+  font-family:'Source Sans 3',sans-serif;font-size:.79rem;font-weight:600;cursor:pointer;transition:background .2s}
+.btn-copy:hover{background:#a88620}
+
+.tbl-wrap{overflow-x:auto;border-radius:8px;border:1.5px solid var(--bord);box-shadow:0 2px 10px rgba(27,58,107,.06)}
+table{width:100%;border-collapse:collapse;font-size:.8rem}
+thead tr{background:var(--bleu);color:#fff}
+thead th{padding:10px 11px;text-align:left;font-size:.73rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}
+tbody tr:nth-child(even){background:var(--gris)}
+tbody tr:hover{background:#e8edf5}
+tbody td{padding:9px 11px;border-bottom:1px solid #e2e8f0;vertical-align:top;line-height:1.4}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.7rem;font-weight:600;white-space:nowrap}
+.bu{background:#fde8e8;color:var(--rouge)}
+.bh{background:#fdebd0;color:var(--orange)}
+.bn{background:#e8f4ec;color:var(--vert)}
+.bf{background:#eef2f8;color:#555}
+.bnew{background:#fff3cd;color:#856404}
+
+footer{text-align:center;font-size:.72rem;color:#aaa;margin-top:40px;padding-bottom:16px}
+footer span{color:var(--or)}
+</style>
+</head>
+<body>
+<header>
+  <div class="h-inner">
+    <div class="blason">🏛️</div>
+    <div class="h-text">
+      <h1>Commune de Jasseron</h1>
+      <p>Assistant IA — Extraction des actions</p>
+    </div>
+  </div>
+</header>
+
+<main>
+  
+  <div class="meta">
+    <div><label>Intitulé de la réunion</label><input type="text" id="m-titre" placeholder="Ex : Conseil municipal – juin 2026"></div>
+    <div><label>Date</label><input type="date" id="m-date"></div>
+    <div><label>Type</label>
+      <select id="m-type">
+        <option value="">— Type —</option>
+        <option>Conseil municipal</option>
+        <option>Réunion de service</option>
+        <option>Réunion technique</option>
+        <option>Réunion partenariale</option>
+        <option>Réunion de travail</option>
+        <option>Autre</option>
+      </select>
+    </div>
+  </div>
+
+  <p class="stitle">Compte rendu</p>
+  <div class="saisie-box">
+    <div class="tabs">
+      <button class="tab on" style="flex:none;padding:7px 16px" onclick="sw('texte',this)">✏️ Saisie texte</button>
+    </div>
+
+    <div class="panel on" id="p-texte">
+      <textarea id="cr" placeholder="Collez ici le texte de votre compte rendu.
+
+Astuce Android : dictez dans Google Docs ou dans le clavier, puis copiez-collez ici."></textarea>
+    </div>
+
+    <button class="btn-go" id="btn-go" onclick="analyser()">✦ Extraire les actions</button>
+  <div id="res"></div>
+</main>
+
+<footer>
+  <p>Mairie de Jasseron — Ain (01250) &nbsp;|&nbsp; <span>Usage interne confidentiel</span></p>
+  <p style="margin-top:6px">
+    <button onclick="reinitListes()" style="background:none;border:none;color:#bbb;font-size:.72rem;cursor:pointer;text-decoration:underline;font-family:Arial">
+      ↺ Réinitialiser les listes responsables / réunions
+    </button>
+  </p>
+</footer>
+
+<script>
+// ── Données de référence (persistées en sessionStorage) ───────────────────
+// Détecter ouverture en local
+if (location.protocol === 'file:') {
+  document.getElementById('warn-file-proto').style.display = 'block';
+}
+
+let RESP = JSON.parse(sessionStorage.getItem('j_resp') || JSON.stringify([
+  "Sébastien GOBERT",
+  "Anouck DELRIEU",
+  "Raphaël PIROUD",
+  "Chloé DESMARIS",
+  "Maxime BOUCHARD",
+  "Delphine SIMONIN",
+  "Florian DELRIEU",
+  "Léane SIMONIN",
+  "Florian RICO",
+  "Angélique BOUILLER",
+  "Guillaume MARECHAL",
+  "Stéphanie CONVERS",
+  "Christian PELUT",
+  "Cindy COPPENS",
+  "Michaël GUILLOT",
+  "Céline Favier",
+  "Cindy Cochet",
+  "Frédérique Maya",
+  "Lionel Pignon"
+]));
+// Emails des responsables (synchronisés depuis l'onglet 👤 Responsables)
+const EMAILS = {
+  "Sébastien GOBERT": "sebastien.gobert@jasseron.com",
+  "Anouck DELRIEU": "anouck.delrieu@jasseron.com",
+  "Raphaël PIROUD": "raphael.piroud@jasseron.com",
+  "Chloé DESMARIS": "chloe.desmaris@jasseron.com",
+  "Maxime BOUCHARD": "maxime.bouchard@jasseron.com",
+  "Delphine SIMONIN": "delphine.simonin@jasseron.com",
+  "Florian DELRIEU": "florian.delrieu@jasseron.com",
+  "Léane SIMONIN": "leane.simonin@jasseron.com",
+  "Florian RICO": "florian.rico@jasseron.com",
+  "Angélique BOUILLER": "angelique.bouiller@jasseron.com",
+  "Guillaume MARECHAL": "guillaume.marechal@jasseron.com",
+  "Stéphanie CONVERS": "stephanie.convers@jasseron.com",
+  "Christian PELUT": "christian.pelut@jasseron.com",
+  "Cindy COPPENS": "cindy.coppens@jasseron.com",
+  "Michaël GUILLOT": "michael.guillot@jasseron.com",
+  "Céline Favier": "celine.favier@jasseron.com",
+  "Cindy Cochet": "cindy.cochet@jasseron.com",
+  "Frédérique Maya": "frederique.maya@jasseron.com",
+  "Lionel Pignon": "lionel.pignon@jasseron.com"
+};
+
+let REUN = JSON.parse(sessionStorage.getItem('j_reun') || JSON.stringify([
+  "Conseil municipal",
+  "Réunion technique",
+  "Réunion budget",
+  "Réunion associations",
+  "Conseil municipal",
+  "Réunion de travail",
+  "Causerie",
+  "Réunion suite élections",
+  "Bureau",
+  "Organisation bibliothèque",
+  "COPIL restauration église",
+  "Résidence autonomie"
+]));
+const save = () => {
+  sessionStorage.setItem('j_resp', JSON.stringify(RESP));
+  sessionStorage.setItem('j_reun', JSON.stringify(REUN));
+};
+
+// ── Onglets ───────────────────────────────────────────────────────────────
+let activeTab = 'texte';
+function sw(tab, btn) {
+  activeTab = 'texte';
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+  btn.classList.add('on');
+}
+
+
+
+// ── Texte actif ───────────────────────────────────────────────────────────
+function getText() {
+  return document.getElementById('cr').value.trim();
+}
+
+// ── Analyse ───────────────────────────────────────────────────────────────
+async function analyser() {
+  const cr = getText();
+  if (!cr) { alert("Aucun texte à analyser."); return; }
+  const titre = document.getElementById('m-titre').value.trim();
+  const date  = document.getElementById('m-date').value;
+  const type  = document.getElementById('m-type').value;
+  const dateF = date ? new Date(date).toLocaleDateString('fr-FR') : '';
+  const reunion = titre || (dateF ? `Réunion du ${dateF}` : 'Réunion non renseignée');
+
+  const btn = document.getElementById('btn-go');
+  btn.disabled = true; btn.textContent = 'Analyse en cours…';
+  document.getElementById('res').innerHTML = `<div class="loader-w"><div class="spin"></div><div class="spin-msg">Extraction des actions…</div></div>`;
+
+  const prompt = `Tu es l'assistant administratif de la mairie de Jasseron (Ain).
+RÉUNION : ${reunion}
+COMPTE RENDU :
+${cr}
+RESPONSABLES CONNUS : ${RESP.join(', ')}
+
+RÈGLES ABSOLUES :
+- Extraire TOUTES les actions, décisions et engagements sans exception.
+- Inclure TOUTES les personnes citées, même si elles ne sont pas dans la liste des responsables connus.
+- Ne jamais filtrer, exclure ou commenter — uniquement le tableau JSON.
+- Ne rien écrire en dehors du tableau JSON.
+
+Pour chaque action, retourner un objet JSON :
+{"intitule":"verbe à l'infinitif…","responsable":"nom exact du responsable principal","compagnie":"autre personne associée si mentionnée, sinon vide","echeance":"JJ/MM/AA ou vide (format exact : 25/06/26)","statut":"En attente","priorite":"Urgent|Haute|Normale|Faible","observations":"court contexte"}
+
+Retourner UNIQUEMENT le tableau JSON. Rien d'autre.`;
+
+  try {
+    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-5-20251001",
+        max_tokens: 2000,
+        messages: [{ role: "user", content: prompt }]
+      })
+    });
+
+    if (!resp.ok) {
+      const e = await resp.json().catch(() => ({}));
+      throw new Error(`Erreur API (${resp.status}) : ${e?.error?.message || 'inconnue'}`);
+    }
+
+    const data = await resp.json();
+    if (data.type === 'error') throw new Error(data.error?.message || JSON.stringify(data.error));
+
+    const texte = data.content?.find(b => b.type === 'text')?.text || '';
+    const m = texte.match(/\[[\s\S]*\]/);
+    if (!m) throw new Error(`Aucun JSON trouvé. Réponse : "${texte.substring(0,120)}"`);
+
+    let actions;
+    try { actions = JSON.parse(m[0]); }
+    catch(e) { throw new Error(`JSON invalide : "${m[0].substring(0,100)}"`); }
+
+    // Détecter nouveaux responsables et nouvelle réunion SANS les ajouter automatiquement
+    const nouveauxResp = [...new Set(
+      actions.map(a => a.responsable).filter(r => r && r !== 'À définir' && !RESP.some(x => x.toLowerCase().trim() === r.toLowerCase().trim()))
+    )];
+    const nouvelleReunion = !REUN.includes(reunion) ? reunion : null;
+
+    afficher(actions, reunion, nouveauxResp, nouvelleReunion);
+
+  } catch(err) {
+    document.getElementById('res').innerHTML = `<div class="err-box">⚠️ ${err.message}</div>`;
+  } finally {
+    btn.disabled = false; btn.textContent = '✦ Extraire les actions';
+  }
+}
+
+// ── Affichage résultats ───────────────────────────────────────────────────
+function afficher(actions, reunion, nouveauxResp, nouvelleReunion) {
+  const zone = document.getElementById('res');
+  if (!actions || actions.length === 0) {
+    zone.innerHTML = `<div class="warn-box">Aucune action détectée dans ce compte rendu.</div>`;
+    return;
+  }
+
+  // Stocker pour usage ultérieur
+  window._actions   = actions;
+  window._reunion   = reunion;
+  window._nouvResp  = nouveauxResp;
+  window._nouvReun  = nouvelleReunion;
+  window._respValid = {};  // { nom: true/false }
+  window._reunValid = null; // true/false/null
+
+  // ── Cartes de validation — Nouveaux responsables ──────────────────────
+  let cartesResp = '';
+  if (nouveauxResp.length > 0) {
+    const cartes = nouveauxResp.map(nom => `
+      <div id="card-resp-${nom.replace(/\W/g,'_')}" style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #c8d8f0;border-radius:7px;padding:9px 14px;margin-top:8px;transition:opacity .3s">
+        <span style="font-size:1.1rem">👤</span>
+        <span style="flex:1;font-weight:600;color:var(--bleu)">${nom}</span>
+        <span style="font-size:.78rem;color:#888;font-style:italic">nouveau responsable</span>
+        <button onclick="validerResp('${nom.replace(/'/g,"\\'")}', true, this)"
+          style="background:var(--vert);color:#fff;border:none;border-radius:5px;padding:6px 14px;font-size:.8rem;font-weight:600;cursor:pointer">
+          ✓ Valider
+        </button>
+        <button onclick="validerResp('${nom.replace(/'/g,"\\'")}', false, this)"
+          style="background:#e0e0e0;color:#555;border:none;border-radius:5px;padding:6px 14px;font-size:.8rem;cursor:pointer">
+          ✕ Ignorer
+        </button>
+      </div>`).join('');
+
+    cartesResp = `
+      <div style="background:#eef5ff;border:1.5px solid var(--bleu);border-radius:9px;padding:14px 16px;margin-bottom:12px">
+        <p style="font-weight:600;color:var(--bleu);margin-bottom:4px">👤 ${nouveauxResp.length} nouveau${nouveauxResp.length>1?'x':''} responsable${nouveauxResp.length>1?'s':''} détecté${nouveauxResp.length>1?'s':''}</p>
+        <p style="font-size:.8rem;color:#555;margin-bottom:6px">Validez pour l'ajouter à la liste de l'onglet 👤 Responsables de votre Excel.</p>
+        ${cartes}
+      </div>`;
+  }
+
+  // ── Carte de validation — Nouvelle réunion ────────────────────────────
+  let carteReun = '';
+  if (nouvelleReunion) {
+    const dateVal = document.getElementById('m-date').value;
+    const dateAff = dateVal ? new Date(dateVal).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'2-digit'}) : '';
+    // Stocker la date initiale dans une variable globale accessible par validerReun
+    window._dateReunInitiale = dateAff;
+    carteReun = `
+      <div id="card-reun" style="background:#f0f8f0;border:1.5px solid var(--vert);border-radius:9px;padding:14px 16px;margin-bottom:12px">
+        <p style="font-weight:600;color:var(--vert);margin-bottom:4px">📅 Nouvelle réunion détectée</p>
+        <p style="font-size:.8rem;color:#555;margin-bottom:8px">Validez pour l'ajouter à la liste de l'onglet 📅 Réunions de votre Excel.</p>
+        <div style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #b8dcc8;border-radius:7px;padding:9px 14px">
+          <span style="font-size:1.1rem">📅</span>
+          <div style="flex:1">
+            <div style="font-weight:600;color:#1a4a2e">${nouvelleReunion}</div>
+            <div style="font-size:.78rem;color:#888;margin-top:2px">
+              Date : <input type="text" id="inp-reun-date" value="${dateAff}"
+                placeholder="JJ/MM/AA"
+                oninput="window._dateReunSaisie = this.value"
+                style="border:1px solid #ccc;border-radius:4px;padding:2px 7px;font-size:.78rem;width:80px;font-family:Arial">
+            </div>
+          </div>
+          <button onclick="validerReun(true, this)"
+            style="background:var(--vert);color:#fff;border:none;border-radius:5px;padding:6px 14px;font-size:.8rem;font-weight:600;cursor:pointer">
+            ✓ Valider
+          </button>
+          <button onclick="validerReun(false, this)"
+            style="background:#e0e0e0;color:#555;border:none;border-radius:5px;padding:6px 14px;font-size:.8rem;cursor:pointer">
+            ✕ Ignorer
+          </button>
+        </div>
+      </div>`;
+    // Réinitialiser la date saisie à chaque nouvelle carte
+    window._dateReunSaisie = null;
+  }
+
+  // ── Tableau des actions ───────────────────────────────────────────────
+  let csv = [];
+  const lignes = actions.map((a, i) => {
+    const bc = {Urgent:'bu',Haute:'bh',Normale:'bn',Faible:'bf'}[a.priorite]||'bn';
+    const isNew = nouveauxResp.includes(a.responsable);
+    csv.push(`${reunion}\t${a.intitule}\t${a.responsable}\t${a.compagnie||''}\t${a.echeance||''}\t${a.statut||'En attente'}\t${a.priorite}`);
+    return `<tr>
+      <td style="color:#aaa;font-size:.72rem">${i+1}</td>
+      <td style="font-weight:600">${a.intitule}</td>
+      <td>${isNew ? `<span class="badge bnew">⭐ ${a.responsable}</span>` : a.responsable}</td>
+      <td style="color:#888;font-size:.82rem">${a.compagnie||'<span style="color:#ddd">—</span>'}</td>
+      <td><span class="badge ${bc}">${a.priorite}</span></td>
+      <td>${a.echeance||'<span style="color:#ccc">—</span>'}</td>
+      <td style="font-size:.76rem;color:#666">${a.observations||''}</td>
+    </tr>`;
+  }).join('');
+  window._csv = csv.join('\n');
+
+  zone.innerHTML = `
+    ${cartesResp}
+    ${carteReun}
+    <div class="res-head">
+      <h2>✦ ${actions.length} action${actions.length>1?'s':''} extraite${actions.length>1?'s':''}</h2>
+      <button class="btn-copy" id="bcopy" onclick="copier()">⎘ Copier pour Excel</button>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>N°</th><th>Intitulé</th><th>Responsable</th><th>En compagnie de</th><th>Priorité</th><th>Échéance</th><th>Observations</th></tr></thead>
+        <tbody>${lignes}</tbody>
+      </table>
+    </div>
+    <p style="margin-top:10px;font-size:.75rem;color:#aaa;text-align:right">
+      Réunion : <strong style="color:var(--bleu)">${reunion}</strong> · Ordre des colonnes : <em>Réunion · Intitulé · Responsable · En compagnie de · Échéance · Statut · Priorité</em>
+    </p>
+    ${genererBlocMails(actions, reunion)}`;
+}
+
+// ── Validation responsable ────────────────────────────────────────────────
+function validerResp(nom, valide, btn) {
+  const cardId = 'card-resp-' + nom.replace(/\W/g,'_');
+  const card = document.getElementById(cardId);
+  if (valide) {
+    if (!RESP.includes(nom)) { RESP.push(nom); save(); }
+    window._respValid[nom] = true;
+    card.style.background = '#e8f4ec';
+    card.style.borderColor = 'var(--vert)';
+    card.querySelectorAll('button').forEach(b => b.style.display='none');
+    card.innerHTML += '<span style="color:var(--vert);font-weight:600;font-size:.85rem">✓ Ajouté à la liste</span>';
+
+    // Générer ligne Excel à copier
+    afficherExportResp(nom);
+  } else {
+    card.style.opacity = '0.4';
+    card.querySelectorAll('button').forEach(b => b.style.display='none');
+    card.innerHTML += '<span style="color:#aaa;font-size:.82rem;font-style:italic">Ignoré</span>';
+  }
+}
+
+function afficherExportResp(nom) {
+  const zoneId = 'export-resp-' + nom.replace(/\W/g,'_');
+  if (document.getElementById(zoneId)) return;
+  const cardId = 'card-resp-' + nom.replace(/\W/g,'_');
+  const card   = document.getElementById(cardId);
+  const ligne  = nom + '\t';
+  const div = document.createElement('div');
+  div.id = zoneId;
+  div.style.cssText = 'margin-top:8px;background:#fff;border:1px solid #b8dcc8;border-radius:6px;padding:8px 12px;font-size:.8rem;color:#333';
+  div.innerHTML = `<span style="color:var(--bleu);font-weight:600">📋 À coller dans l'onglet 👤 Responsables (col. A)</span><br>
+    <code style="font-size:.82rem">${nom}</code>
+    <button onclick="copierTexte('${nom.replace(/'/g,"\\'")}','btn-cp-resp-${nom.replace(/\W/g,'_')}')" id="btn-cp-resp-${nom.replace(/\W/g,'_')}"
+      style="margin-left:10px;background:var(--bleu);color:#fff;border:none;border-radius:4px;padding:3px 10px;font-size:.75rem;cursor:pointer">
+      ⎘ Copier
+    </button>`;
+  card.appendChild(div);
+}
+
+// ── Validation réunion ────────────────────────────────────────────────────
+function validerReun(valide, btn) {
+  const card = document.getElementById('card-reun');
+  const reunion = window._reunion;
+  if (valide) {
+    const dateInp = document.getElementById('inp-reun-date');
+    const dateVal = dateInp ? dateInp.value.trim() : '';
+    if (!REUN.includes(reunion)) { REUN.push(reunion); save(); }
+    window._reunValid = true;
+    card.style.background = '#e8f4ec';
+    card.style.borderColor = 'var(--vert)';
+    card.querySelectorAll('button').forEach(b => b.style.display='none');
+    if (dateInp) dateInp.disabled = true;
+
+    // Générer ligne Excel à copier
+    const ligneExcel = `${reunion}\t${dateVal}`;
+    const div = document.createElement('div');
+    div.style.cssText = 'margin-top:10px;background:#fff;border:1px solid #b8dcc8;border-radius:6px;padding:8px 12px;font-size:.8rem';
+    div.innerHTML = `<span style="color:var(--vert);font-weight:600">✓ Ajoutée à la liste</span><br>
+      <span style="color:var(--bleu);font-weight:600">📋 À coller dans l'onglet 📅 Réunions (col. A-B)</span><br>
+      <code style="font-size:.82rem">${reunion} | ${dateVal}</code>
+      <button onclick="copierTexte('${ligneExcel.replace(/'/g,"\\'")}','btn-cp-reun')" id="btn-cp-reun"
+        style="margin-left:10px;background:var(--vert);color:#fff;border:none;border-radius:4px;padding:3px 10px;font-size:.75rem;cursor:pointer">
+        ⎘ Copier
+      </button>`;
+    card.appendChild(div);
+  } else {
+    card.style.opacity = '0.4';
+    card.querySelectorAll('button').forEach(b => b.style.display='none');
+    card.innerHTML += '<span style="color:#aaa;font-size:.82rem;font-style:italic">Ignorée</span>';
+  }
+}
+
+// ── Copie texte générique ─────────────────────────────────────────────────
+function copierTexte(texte, btnId) {
+  const ta = document.createElement('textarea');
+  ta.value = texte; ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try { document.execCommand('copy'); } catch(e) {}
+  document.body.removeChild(ta);
+  const btn = document.getElementById(btnId);
+  if (btn) {
+    btn.textContent = '✓ Copié !';
+    btn.style.background = '#888';
+    setTimeout(()=>{ btn.textContent='⎘ Copier'; btn.style.background=''; }, 2000);
+  }
+}
+
+// ── Génération des notifications email ───────────────────────────────────
+function genererBlocMails(actions, reunion) {
+  // Grouper les actions par responsable
+  const parResp = {};
+  actions.forEach(a => {
+    const resp = a.responsable;
+    if (!resp || resp === 'À définir') return;
+    if (!parResp[resp]) parResp[resp] = [];
+    parResp[resp].push(a);
+  });
+
+  const resps = Object.keys(parResp);
+  if (resps.length === 0) return '';
+
+  const cartes = resps.map(resp => {
+    const email = EMAILS[resp] || null;
+    const acts  = parResp[resp];
+
+    // Corps du mail
+    const lignesActions = acts.map((a, i) =>
+      `  ${i+1}. ${a.intitule}${a.echeance ? ' (échéance : ' + a.echeance + ')' : ''}${a.priorite !== 'Normale' ? ' — ' + a.priorite : ''}`
+    ).join('\n');
+
+    const sujet = encodeURIComponent(`Action(s) suite à ${reunion} — Commune de Jasseron`);
+    const cols = "Réunion d'origine | Intitulé | Responsable | En compagnie de | Échéance | Statut | Priorité";
+    const corps = encodeURIComponent(
+`Bonjour ${resp},
+
+Suite à la réunion "${reunion}", les actions suivantes vous ont été attribuées :
+
+${lignesActions}
+
+Merci de bien vouloir mettre à jour le tableau de suivi des actions de la commune dès que l'avancement évolue (statut : En attente / En cours / Terminé / Annulé).
+
+Le tableau est accessible auprès du secrétariat de la mairie ou de votre référent.
+
+Cordialement,
+Sébastien GOBERT
+Maire de Jasseron`
+    );
+
+    const mailto = email
+      ? `mailto:${email}?subject=${sujet}&body=${corps}`
+      : `mailto:?subject=${sujet}&body=${corps}`;
+
+    const emailAff = email
+      ? `<span style="font-size:.75rem;color:#888">${email}</span>`
+      : `<span style="font-size:.75rem;color:#f0a000">⚠️ email non renseigné</span>`;
+
+    return `
+      <div style="display:flex;align-items:center;gap:12px;background:#fff;border:1px solid #d0e4d8;border-radius:7px;padding:9px 14px;margin-top:8px">
+        <span style="font-size:1rem">📧</span>
+        <div style="flex:1">
+          <div style="font-weight:600;color:#1a4a2e;font-size:.88rem">${resp}</div>
+          <div style="margin-top:2px">${emailAff} · <span style="font-size:.75rem;color:#555">${acts.length} action${acts.length>1?'s':''}</span></div>
+        </div>
+        <a href="${mailto}"
+           style="background:#1B3A6B;color:#fff;text-decoration:none;border-radius:5px;padding:7px 14px;font-size:.8rem;font-weight:600;white-space:nowrap">
+          ✉️ Envoyer
+        </a>
+      </div>`;
+  }).join('');
+
+  return `
+    <div style="margin-top:20px;background:#f0f8f0;border:1.5px solid #27AE60;border-radius:9px;padding:14px 16px">
+      <p style="font-weight:600;color:#1a4a2e;margin-bottom:4px">✉️ Notifier les responsables</p>
+      <p style="font-size:.8rem;color:#555;margin-bottom:6px">Cliquez sur <strong>Envoyer</strong> pour ouvrir un mail pré-rédigé dans votre messagerie.</p>
+      ${cartes}
+    </div>`;
+}
+
+// ── Copie universelle ─────────────────────────────────────────────────────
+function copier() {
+  if (!window._csv) return;
+  const ta = document.createElement('textarea');
+  ta.value = window._csv;
+  ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
+  document.body.appendChild(ta);
+  ta.focus(); ta.select();
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch(e) {}
+  document.body.removeChild(ta);
+  if (!ok && navigator.clipboard) { navigator.clipboard.writeText(window._csv); ok = true; }
+  const btn = document.getElementById('bcopy');
+  if (btn) {
+    btn.textContent = ok ? '✓ Copié !' : '⚠️ Échec';
+    btn.style.background = ok ? 'var(--vert)' : 'var(--rouge)';
+    setTimeout(() => { btn.textContent = '⎘ Copier pour Excel'; btn.style.background = ''; }, 2500);
+  }
+}
+// ── Réinitialisation des listes (vide le sessionStorage) ─────────────────
+function reinitListes() {
+  if (!confirm('Réinitialiser les listes ? Les responsables et réunions ajoutés pendant cette session seront effacés.')) return;
+  sessionStorage.removeItem('j_resp');
+  sessionStorage.removeItem('j_reun');
+  location.reload();
+}
+</script>
+</body>
+</html>
